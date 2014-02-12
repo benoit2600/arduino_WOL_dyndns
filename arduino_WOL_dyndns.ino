@@ -17,7 +17,7 @@
 #include <Dns.h>
 #include <EthernetUdp.h>
 #include <RCSwitch.h>
-
+#include "password.h"
 /* Paramètre utilisateur : */
 
 /* - Paramètre généraux :  */
@@ -34,7 +34,7 @@
 /*	- Paramètre Dyndns*/
 #define HOST_DYNDNS				benoit2600.dyndns.org		// host dyndns a mettre a jour.
 #define DNS_IP 					208,67,222,222  			// ici, OpenDNS (ex DNS google : 8,8,8,8)
-#define USER_PASS64					 // user:pass en base 64.
+#define USER_PASS64				PASSWORD	 // user:pass en base 64.
 
 /*	-Parametre bouton*/
 #define PINBUTTON1 6
@@ -137,6 +137,7 @@ void check_button(int inPin){
 		DEBUG((inPin));
 		DEBUGLN((" appuyer"));
 		wol_send_packet(NULL);  // Allume le PC
+		DEBUGLN(("fin check bouton"));
 	} 
 }
 
@@ -292,6 +293,7 @@ void wol_send_packet(byte * packetBuffer){
 		udp.write(packetBuffer, MAGIC_PACKET_SIZE);
 		udp.endPacket();
 	}
+	DEBUGLN(("Allumage ecrans."));
 	Remote_ON();	//On allume les ecrans
 	Remote_ON();	//On relance au cas ou
 
@@ -325,7 +327,7 @@ void check_wol_magic_packet(void){
 			packetSize = udp.parsePacket();
 			DEBUG(("packetSize :  "));
 			DEBUGLN((packetSize));
-			delay(50);
+			delay(10);
 		}while(packetSize != 0);
 	}
 }
