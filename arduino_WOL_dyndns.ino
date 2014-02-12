@@ -44,7 +44,7 @@
 #define PORT_EXTINCTION_SERVER 4243							// Port du serveur d'extinction du PC
 #define PIN_TRANSMITTER	9 									// Pin du transmetteur 433Mhz
 /*	- Paramètre de débugage*/
-#define DEBUG 0
+#define DEBUG 1
 
 #ifdef DEBUG
   #define DEBUGLN(x) Serial.println x
@@ -111,8 +111,11 @@ void check_extinction(void){
 		}
 		DEBUG(("msg recu : "));
 		DEBUGLN((str));
-		if(strcmp(str, "extinction")==0)
+		if(strcmp(str, "extinction")==0){
+			delay(7000); //on attend pour verifier la bonne exctinction de windows
 			Remote_OFF();
+			Remote_OFF();
+		}
 		free(str);
 	}
 }
@@ -290,6 +293,8 @@ void wol_send_packet(byte * packetBuffer){
 		udp.endPacket();
 	}
 	Remote_ON();	//On allume les ecrans
+	Remote_ON();	//On relance au cas ou
+
 }
 /**
  * \brief Verifie les paquet magique reçu, et reveil le PC si tout est bon. Une vérification par mot de passe est effectué.
@@ -316,22 +321,26 @@ void check_wol_magic_packet(void){
 		else{
 			wol_send_packet(packetBuffer); // envoi du paquet magique recu.
 		}
+		do{									// On vide la pile de paquet reçu
+			packetSize = udp.parsePacket();
+			DEBUG(("packetSize :  "));
+			DEBUGLN((packetSize));
+			delay(50);
+		}while(packetSize != 0);
 	}
 }
 
 /* Séquence perso d'ectinction des écrans + enceinte*/
 void Remote_OFF(void){
-	delay(7000); // on attend pour verifier la bonne extinction de windows
-
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
 
 	mySwitch.switchOff(2, 3);
-	delay(500);
+	delay(1000);
 	mySwitch.switchOff(2, 2);
-	delay(500);
+	delay(1000);
 	mySwitch.switchOff(2, 1);
-	delay(500);
+	delay(1000);
   	mySwitch.disableTransmit();
 }
 
@@ -341,11 +350,11 @@ void Remote_ON(void){
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
 
   	mySwitch.switchOn(2, 1);
-  	delay(250);
+  	delay(750);
   	mySwitch.switchOn(2, 2);
-  	delay(250);  
+  	delay(750);  
   	mySwitch.switchOn(2, 3);
-  	delay(250);  
+  	delay(750);  
   	mySwitch.disableTransmit();
 }
 
