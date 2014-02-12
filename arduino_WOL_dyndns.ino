@@ -135,9 +135,13 @@ void check_button(int inPin){
 			val = digitalRead(inPin);
 			DEBUGLN(("boucle bouton"));
 
-			delay(10);
+			delay(50);
 		}
-		DEBUGLN(("Bouton appuyer"));
+		DEBUG(("Bouton pin "));
+		DEBUG((inPin));
+		DEBUGLN((" appuyer"));
+
+
 		wol_send_packet(NULL);  // Allume le PC
 	} 
 }
