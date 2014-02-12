@@ -16,6 +16,7 @@
 #include <Ethernet.h>
 #include <Dns.h>
 #include <EthernetUdp.h>
+#include <RCSwitch.h>
 
 /* Paramètre utilisateur : */
 
@@ -41,9 +42,9 @@
 
 /* Paramètre télécommande, écran*/
 #define PORT_EXTINCTION_SERVER 4243							// Port du serveur d'extinction du PC
-
+#define PIN_TRANSMITTER	9 									// Pin du transmetteur 433Mhz
 /*	- Paramètre de débugage*/
-#define DEBUG 1
+#define DEBUG 0
 
 #ifdef DEBUG
   #define DEBUGLN(x) Serial.println x
@@ -55,24 +56,16 @@
 
 
 unsigned int timer =0;
-unsigned char buttonState = 0;								// variable for reading the pushbutton status
-const unsigned char buttonPin = 2;							// the number of the pushbutton pin
-const unsigned char REMOTE1PIN = 3; 						// port arduino pour controler le bouton 1 de la télécommande
-const unsigned char REMOTE2PIN = 4;
-const unsigned char REMOTE3PIN = 5;
-const unsigned int arduinoPort = 33664;						   
-
 byte arduinoMAC[] = {ADDRESSE_MAC_ARDUINO}; 				// Adresse MAC Arduino sticker
 IPAddress ipLocal(IP_LOCAL_ARDUINO);							// Adresse IP de l'arduino 
 IPAddress broadcastIP(IP_BROADCAST_ARDUINO);					// Adresse IP de Broadcast LAN
 EthernetUDP udp; 											// Création d'Un objet de classe EthernetUDP
 EthernetServer tcpServer(PORT_EXTINCTION_SERVER);
+
 void setup() {
-	pinMode(buttonPin, INPUT);
-	pinMode(REMOTE1PIN, OUTPUT);
-	pinMode(REMOTE2PIN, OUTPUT);
-	pinMode(REMOTE3PIN, OUTPUT);
-	Remote_Reset();
+	pinMode(PINBUTTON1, INPUT);
+	pinMode(PINBUTTON2, INPUT);
+
 	delay(1000);
 	Serial.begin(9600); // set up Serial library at 9600 bps
 	DEBUGLN(("c'est parti !"));
@@ -100,7 +93,7 @@ void loop() {
 /**
 * \brief vérifie une connection réseau, et regarde si elle correspond à l'extinction de l'écran.
 */
-void check_extinction(){
+void check_extinction(void){
 	EthernetClient client = tcpServer.available();
   	if (client) {
   		DEBUGLN(("y a un client !"));
@@ -119,8 +112,8 @@ void check_extinction(){
 		DEBUG(("msg recu : "));
 		DEBUGLN((str));
 		if(strcmp(str, "extinction")==0)
-			DEBUGLN(("Extinction de l'ecran (a coder)"));
-	free(str);
+			Remote_OFF();
+		free(str);
 	}
 }
 
@@ -135,13 +128,11 @@ void check_button(int inPin){
 			val = digitalRead(inPin);
 			DEBUGLN(("boucle bouton"));
 
-			delay(50);
+			delay(100);
 		}
 		DEBUG(("Bouton pin "));
 		DEBUG((inPin));
 		DEBUGLN((" appuyer"));
-
-
 		wol_send_packet(NULL);  // Allume le PC
 	} 
 }
@@ -149,7 +140,7 @@ void check_button(int inPin){
 /**
  * \brief met a jour l'adresse IP public si elle a changé depuis la dernière vérif.
  */
-void findAndSetIPPublic(){
+void findAndSetIPPublic(void){
 		static char * IPPublicNew;
 		static char * IPPublic = (char*) calloc(sizeof(char), 15); // Adresse IP public actuelle. (taille max : 15. min : 11)
 
@@ -214,7 +205,7 @@ int setIpAdressPublic(char * IPpublic){
  * \brief Va chercher l'adresse P Public du routeur depuis le site checkip.dyndns.com
  * \return retourne l'adresse IP sous la forme : "xxx.xxx.xxx.xxx"
  */
-char * IpAdressPublic(){
+char * IpAdressPublic(void){
 	EthernetClient tcpClient;	// Client TCP
 
 	boolean ligne = false; // permet de recuperer la ligne contenant le HTML, en ne prenant pas le header
@@ -298,11 +289,12 @@ void wol_send_packet(byte * packetBuffer){
 		udp.write(packetBuffer, MAGIC_PACKET_SIZE);
 		udp.endPacket();
 	}
+	Remote_ON();	//On allume les ecrans
 }
 /**
  * \brief Verifie les paquet magique reçu, et reveil le PC si tout est bon. Une vérification par mot de passe est effectué.
  */
-void check_wol_magic_packet(){
+void check_wol_magic_packet(void){
 	byte password[] = {PASSWORD_WOL};
 	byte packetBuffer[MAGIC_PACKET_SIZE];
 	boolean passCheck= true;
@@ -327,23 +319,33 @@ void check_wol_magic_packet(){
 	}
 }
 
-/* reset tout les pins de la telecommande a LOW*/
-void Remote_Reset(){
-	digitalWrite(REMOTE1PIN, LOW);
-	digitalWrite(REMOTE2PIN, LOW);
-	digitalWrite(REMOTE3PIN, LOW);
+/* Séquence perso d'ectinction des écrans + enceinte*/
+void Remote_OFF(void){
+	delay(7000); // on attend pour verifier la bonne extinction de windows
+
+	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
+	mySwitch.enableTransmit(PIN_TRANSMITTER);
+
+	mySwitch.switchOff(2, 3);
+	delay(500);
+	mySwitch.switchOff(2, 2);
+	delay(500);
+	mySwitch.switchOff(2, 1);
+	delay(500);
+  	mySwitch.disableTransmit();
 }
-/*Séquence perso d'allumage des écran + enceinte*/
+
+/*Séquence perso d'allumage des écrans + enceinte*/
 void Remote_ON(void){
-	Remote_Reset();
-	digitalWrite(REMOTE1PIN, HIGH);
-	delay(750);
-	digitalWrite(REMOTE1PIN, LOW);
-	digitalWrite(REMOTE2PIN, HIGH);
-	delay(750);
-	digitalWrite(REMOTE2PIN, LOW);
-	digitalWrite(REMOTE3PIN, HIGH);
-	delay(750);
-	digitalWrite(REMOTE3PIN, LOW);
+	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
+	mySwitch.enableTransmit(PIN_TRANSMITTER);
+
+  	mySwitch.switchOn(2, 1);
+  	delay(250);
+  	mySwitch.switchOn(2, 2);
+  	delay(250);  
+  	mySwitch.switchOn(2, 3);
+  	delay(250);  
+  	mySwitch.disableTransmit();
 }
 
