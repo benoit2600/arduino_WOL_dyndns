@@ -22,7 +22,8 @@
 /* - Paramètre généraux :  */
 #define ADRESSE_WOL				0x30,0x85,0xA9,0xA0,0xE0,0x38	// Adresse du PC a réveiller
 #define PASSWORD_WOL 			0x00,0xAC,0x1B,0xA3,0xDE,0x53	// Password (a utiliser via apps SecureOn)
-#define ADDRESSE_MAC_ARDUINO 	0x00,0xAA,0xBB,0xCC,0xDE,0x03
+
+#define ADDRESSE_MAC_ARDUINO 	0x00,0xAA,0xBB,0xCC,0xDE,0x03 	// Adresse mac de la arduino 
 #define PORT_DISTANT_WOL		33664							// Port écouté par Arduino
 #define IP_LOCAL_ARDUINO		192,168,0,180					// IP de la arduino sur le réseaux local
 #define IP_BROADCAST_ARDUINO	192,168,0,255					// IP de broadcast pour le WOL
@@ -37,6 +38,9 @@
 /*	-Parametre bouton*/
 #define PINBUTTON1 6
 #define PINBUTTON2 7
+
+/* Paramètre télécommande, écran*/
+#define PORT_EXTINCTION_SERVER 4243							// Port du serveur d'extinction du PC
 
 /*	- Paramètre de débugage*/
 #define DEBUG 1
@@ -62,7 +66,7 @@ byte arduinoMAC[] = {ADDRESSE_MAC_ARDUINO}; 				// Adresse MAC Arduino sticker
 IPAddress ipLocal(IP_LOCAL_ARDUINO);							// Adresse IP de l'arduino 
 IPAddress broadcastIP(IP_BROADCAST_ARDUINO);					// Adresse IP de Broadcast LAN
 EthernetUDP udp; 											// Création d'Un objet de classe EthernetUDP
-
+EthernetServer tcpServer(PORT_EXTINCTION_SERVER);
 void setup() {
 	pinMode(buttonPin, INPUT);
 	pinMode(REMOTE1PIN, OUTPUT);
@@ -75,6 +79,7 @@ void setup() {
 	Ethernet.begin(arduinoMAC,ipLocal);
 	DEBUGLN(("Ethernet connecter !"));
 	udp.begin(PORT_DISTANT_WOL);
+	tcpServer.begin();
 	DEBUGLN(("On passe a la boucle principale \n"));
 }
 
@@ -88,11 +93,41 @@ void loop() {
 	}
 	check_button(PINBUTTON1);
 	check_button(PINBUTTON2);
-
+	check_extinction();
 	delay(100);
 	timer++;
 }
+/**
+* \brief vérifie une connection réseau, et regarde si elle correspond à l'extinction de l'écran.
+*/
+void check_extinction(){
+	EthernetClient client = tcpServer.available();
+  	if (client) {
+  		DEBUGLN(("y a un client !"));
+  		char c;
+  		char * str = (char* )calloc(sizeof(char),12);
+		char * strP = str; // pointeur sur la chaine d'entrée str
 
+    	while (client.connected()) {
+      		if (client.available()) {
+
+       			c = client.read();
+          		*strP = c;
+				strP++;
+        	} 
+		}
+		DEBUG(("msg recu : "));
+		DEBUGLN((str));
+		if(strcmp(str, "extinction")==0)
+			DEBUGLN(("Extinction de l'ecran (a coder)"));
+	free(str);
+	}
+}
+
+/**
+ * \brief Si un bouton est appuyé, on envoie un paquet magique.
+ * \param inPin Pin du bouton.
+ */
 void check_button(int inPin){
 	unsigned char  val = digitalRead(inPin);  // read input value
 	if (val == HIGH) {         // check if the input is HIGH (button released)
@@ -104,7 +139,6 @@ void check_button(int inPin){
 		}
 		DEBUGLN(("Bouton appuyer"));
 		wol_send_packet(NULL);  // Allume le PC
-
 	} 
 }
 
@@ -181,7 +215,7 @@ char * IpAdressPublic(){
 
 	boolean ligne = false; // permet de recuperer la ligne contenant le HTML, en ne prenant pas le header
 	char * str = (char* )calloc(sizeof(char),256);
-	char * strP = str; // pointeur sur la chaine d'enrée str
+	char * strP = str; // pointeur sur la chaine d'entrée str
 	char DynIP[] = "IP Address: "; //phrase après laquelle ce trouve l'adresse IP"
 	char DynFinIp = '<'; // symbole se trouvant juste après l'adresse IP
 	char * IP = (char*) calloc(sizeof(char), 15); // Adresse IP finale, a placer dans str a la fin de la fonction. (taille max : 15. min : 11)
