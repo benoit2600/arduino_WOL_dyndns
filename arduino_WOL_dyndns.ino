@@ -112,7 +112,7 @@ void check_extinction(void){
 		DEBUG(("msg recu : "));
 		DEBUGLN((str));
 		if(strcmp(str, "extinction")==0){
-			delay(7000); //on attend pour verifier la bonne exctinction de windows
+			delay(5000); //on attend pour verifier la bonne exctinction de windows
 			Remote_OFF();
 			Remote_OFF();
 		}
