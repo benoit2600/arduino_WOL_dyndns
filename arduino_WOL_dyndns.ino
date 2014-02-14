@@ -21,9 +21,6 @@
 /* Paramètre utilisateur : */
 
 /* - Paramètre généraux :  */
-#define ADRESSE_WOL				0x30,0x85,0xA9,0xA0,0xE0,0x38	// Adresse du PC a réveiller
-#define PASSWORD_WOL 			0x00,0xAC,0x1B,0xA3,0xDE,0x53	// Password (a utiliser via apps SecureOn)
-
 #define ADDRESSE_MAC_ARDUINO 	0x00,0xAA,0xBB,0xCC,0xDE,0x03 	// Adresse mac de la arduino 
 #define PORT_DISTANT_WOL		33664							// Port écouté par Arduino
 #define IP_LOCAL_ARDUINO		192,168,0,180					// IP de la arduino sur le réseaux local
@@ -34,7 +31,6 @@
 /*	- Paramètre Dyndns*/
 #define HOST_DYNDNS				benoit2600.dyndns.org		// host dyndns a mettre a jour.
 #define DNS_IP 					208,67,222,222  			// ici, OpenDNS (ex DNS google : 8,8,8,8)
-#define USER_PASS64				PASSWORD	 // user:pass en base 64.
 
 /*	-Parametre bouton*/
 #define PINBUTTON1 6
