@@ -22,14 +22,12 @@
 
 /* - Paramètre généraux :  */
 #define ADDRESSE_MAC_ARDUINO 	0x00,0xAA,0xBB,0xCC,0xDE,0x03 	// Adresse mac de la arduino 
-#define PORT_DISTANT_WOL		33664							// Port écouté par Arduino
 #define IP_LOCAL_ARDUINO		192,168,0,180					// IP de la arduino sur le réseaux local
 #define IP_BROADCAST_ARDUINO	192,168,0,255					// IP de broadcast pour le WOL
 #define MAGIC_PACKET_SIZE 		108								// Taille d'un paquet magique
 #define WOL_PORT				9								// Port de transmission (local) du paquet magique
 
 /*	- Paramètre Dyndns*/
-#define HOST_DYNDNS				benoit2600.dyndns.org		// host dyndns a mettre a jour.
 #define DNS_IP 					208,67,222,222  			// ici, OpenDNS (ex DNS google : 8,8,8,8)
 
 /*	-Parametre bouton*/
