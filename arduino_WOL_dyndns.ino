@@ -332,7 +332,9 @@ void check_wol_magic_packet(void){
 void Remote_OFF(void){
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
-
+	
+	mySwitch.switchOff(2, 1);	// On essaie d'éteindre directement toutes les prises.
+	delay(1000);
 	mySwitch.switchOff(2, 3);
 	delay(1000);
 	mySwitch.switchOff(2, 2);
