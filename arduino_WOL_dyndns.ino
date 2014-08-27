@@ -55,11 +55,13 @@ IPAddress ipLocal(IP_LOCAL_ARDUINO);							// Adresse IP de l'arduino
 IPAddress broadcastIP(IP_BROADCAST_ARDUINO);					// Adresse IP de Broadcast LAN
 EthernetUDP udp; 											// Création d'Un objet de classe EthernetUDP
 EthernetServer tcpServer(PORT_EXTINCTION_SERVER);
-
+static char * IPPublic = NULL;
 void setup() {
 	pinMode(PINBUTTON1, INPUT);
 	pinMode(PINBUTTON2, INPUT);
-
+  	IPPublic= (char*) calloc(sizeof(char), 15); // Adresse IP public actuelle. (taille max : 15. min : 11)
+        if(IPPublic == NULL)
+          DEBUGLN(("Allocation de IPPublic impossible"));
 	delay(1000);
 	Serial.begin(9600); // set up Serial library at 9600 bps
 	DEBUGLN(("c'est parti !"));
@@ -71,8 +73,9 @@ void setup() {
 }
 
 void loop() {
+
 	if(timer == 72000){ // On s'occupe des DNS toutes les 2h
-		findAndSetIPPublic();
+		findAndSetIPPublic(IPPublic);
 		timer = 0;
 	}
 	if(timer % 10 == 0){// On s'occupe du wol reseaux  toutes les 1 seconde
@@ -93,6 +96,8 @@ void check_extinction(void){
   		DEBUGLN(("y a un client !"));
   		char c;
   		char * str = (char* )calloc(sizeof(char),12);
+                if(str == NULL)
+                  DEBUGLN(("Allocation de str dans check_extinction impossible"));
 		char * strP = str; // pointeur sur la chaine d'entrée str
 
     	while (client.connected()) {
@@ -106,7 +111,7 @@ void check_extinction(void){
 		DEBUG(("msg recu : "));
 		DEBUGLN((str));
 		if(strcmp(str, "extinction")==0){
-			delay(5000); //on attend pour verifier la bonne exctinction de windows
+			delay(5000); //on attend pour verifier la bonne extinction de windows
 			Remote_OFF();
 			Remote_OFF();
 		}
@@ -138,9 +143,8 @@ void check_button(int inPin){
 /**
  * \brief met a jour l'adresse IP public si elle a changé depuis la dernière vérif.
  */
-void findAndSetIPPublic(void){
+void findAndSetIPPublic(char * IPPublic){
 		static char * IPPublicNew;
-		static char * IPPublic = (char*) calloc(sizeof(char), 15); // Adresse IP public actuelle. (taille max : 15. min : 11)
 
 		IPPublicNew = IpAdressPublic();
 		DEBUG(("\nIPPublicNew :"));
@@ -162,35 +166,38 @@ void findAndSetIPPublic(void){
  * \return retourne 1 si tout va bien, et 0 en cas d'erreur de connection.
  */
 int setIpAdressPublic(char * IPpublic){
+  	DEBUGLN(("rentre dans set adress ip public"));
 	EthernetClient tcpClient; 									// Client TCP
-	char dynMember[] = "members.dyndns.org";
-	char hostname[] = "HOST_DYNDNS";
+	char dnsexitMember[] = "update.dnsexit.com";
+	char hostname[] = "benoit2600.linkpc.net";
 	DNSClient dns1;
 	IPAddress dns_ip(DNS_IP); // OPENDNS
 	IPAddress out_ip;
 	dns1.begin(dns_ip);
-	dns1.getHostByName(dynMember, out_ip);
+	dns1.getHostByName(dnsexitMember, out_ip);
 	// création chaine getLine:
 	
 	if (tcpClient.connect(out_ip, 80)) {
-		tcpClient.println("GET /nic/update?hostname=" + (String)hostname + "&myip=" + (String)IPpublic + " HTTP/1.0"); // Make a HTTP request:
-		tcpClient.println("Host: members.dyndns.org");
-		tcpClient.println("Authorization: Basic USER_PASS64");
-		tcpClient.println("User-Agent: Benoit - arduino - 1");
+		
+		tcpClient.println("GET /RemoteUpdate.sv?login="+ (String) user_dnsexit +"&password="+ (String) password_dnsexit +"&host="+ (String) hostname +"&myip="+ (String) IPpublic +" HTTP/1.1"); // Make a HTTP request:
+		tcpClient.println("Host: update.dnsexit.com");
+		//tcpClient.println("keep-alive");
 		tcpClient.println("Connection: close");
 		tcpClient.println();
 	}
-	else {
+	else {   
 		// if you didn't get a connection to the server:
 		DEBUGLN(("connection failed"));
 		return 0;
 	}
+    		DEBUGLN(("Réponse de la commande HTTP"));
+
 	while(tcpClient.connected())
 	{
 		if (tcpClient.available())
 		{
 			char c = tcpClient.read();
-			//DEBUG((c));
+			DEBUG((c));
 		}
 		check_button(PINBUTTON1);
 		check_button(PINBUTTON2);
@@ -208,10 +215,14 @@ char * IpAdressPublic(void){
 
 	boolean ligne = false; // permet de recuperer la ligne contenant le HTML, en ne prenant pas le header
 	char * str = (char* )calloc(sizeof(char),256);
+        if(str == NULL)
+             DEBUGLN(("Allocation de str dans IPAdressPublic impossible"));
 	char * strP = str; // pointeur sur la chaine d'entrée str
 	char DynIP[] = "IP Address: "; //phrase après laquelle ce trouve l'adresse IP"
 	char DynFinIp = '<'; // symbole se trouvant juste après l'adresse IP
-	char * IP = (char*) calloc(sizeof(char), 15); // Adresse IP finale, a placer dans str a la fin de la fonction. (taille max : 15. min : 11)
+	char * IP = (char*) calloc(15, sizeof(char)); // Adresse IP finale, a placer dans str a la fin de la fonction. (taille max : 15. min : 11)
+         if(IP == NULL)
+             DEBUGLN(("Allocation de IP dans IPAdressPublic impossible"));
 	char * IPPointeur = IP;
 	char dynCheckIp[] = "checkip.dyndns.com";
 	DNSClient dns;
@@ -254,12 +265,9 @@ char * IpAdressPublic(void){
 		IPPointeur++;
 		strP++;
 	}
-	IP =(char*) realloc( IP, strlen(IP)*sizeof(char));
-	if(IP == NULL) {
-		DEBUG(("Erreur reallocation memoire de IP"));
-		while(true);
-	}
+	IPPointeur= '\0';
 	free(str);
+
 	return IP;
 }
 /**
