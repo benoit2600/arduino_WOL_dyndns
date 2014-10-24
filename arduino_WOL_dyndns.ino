@@ -58,9 +58,11 @@ void setup() {
     IPAddress ipLocal(IP_LOCAL_ARDUINO);							// Adresse IP de la Arduino 
 	pinMode(PINBUTTON1, INPUT);
 	pinMode(PINBUTTON2, INPUT);
- 
-	delay(1000);
-	Serial.begin(9600); // set up Serial library at 9600 bps
+	//delay(1000);
+
+	#ifdef DEBUG
+		Serial.begin(9600); // set up Serial library at 9600 bps
+	#endif
 	DEBUGLN(("c'est parti !"));
 	Ethernet.begin(arduinoMAC,ipLocal);
 	DEBUGLN(("TCP connecter !"));
@@ -79,7 +81,7 @@ void loop() {
 	check_button(PINBUTTON1);
 	check_button(PINBUTTON2);
 	check_ethernet_msg();
-	delay(20);
+	delay(10);
 	timer++;
 }
 /**
@@ -116,7 +118,7 @@ void test_msg(String str,EthernetClient *client){
 	DEBUG(("msg dans test_msg : "));
 	DEBUGLN((str));
 
-	if( str == "extinction\n"){
+	if( str == "extinction\n" || str == "extinction"){
 		client->write("ok pour l'extinction\n");
 		delay(5000); //on attend pour verifier la bonne extinction de windows
 		Remote_OFF();
@@ -132,9 +134,9 @@ void test_msg(String str,EthernetClient *client){
 		client->write(otherString);
 
 		DEBUGLN(("msg de debug sans RaL "));
-		DEBUGLN((last_debug_msg));
 		DEBUGLN((otherString));
-	}
+		last_debug_msg=""; 	// fix overflow
+	}	
 }
 /**
  * \brief Si un bouton est appuyé, on envoie un paquet magique.
@@ -185,7 +187,7 @@ void wol_send_packet(byte * packetBuffer){
 		udp.endPacket();
 	}
 	else{
-		// envoi du paquet sur l'adresse de broadcast
+		// envoi du paquet sur l'adresse à l'adresse packetBuffer
 		DEBUGLN(("envoi du paquet magique."));
 		udp.beginPacket(broadcastIP, WOL_PORT);
 		udp.write(packetBuffer, MAGIC_PACKET_SIZE);
