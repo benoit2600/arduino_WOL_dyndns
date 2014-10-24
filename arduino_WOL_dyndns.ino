@@ -79,7 +79,7 @@ void loop() {
 		timer = 0;
 	}
 	check_button(PINBUTTON1);
-	check_button(PINBUTTON2);
+	//check_button(PINBUTTON2);
 	check_ethernet_msg();
 	delay(10);
 	timer++;
