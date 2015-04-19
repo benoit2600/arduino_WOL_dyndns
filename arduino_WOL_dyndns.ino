@@ -38,7 +38,7 @@
 #define PORT_EXTINCTION_SERVER 4243							// Port du serveur d'extinction du PC
 #define PIN_TRANSMITTER	9 									// Pin du transmetteur 433Mhz
 /*	- Paramètre de débugage*/
-#define DEBUG 1
+//#define DEBUG 1
 
 #ifdef DEBUG
   #define DEBUGLN(x) Serial.println x
@@ -145,21 +145,25 @@ void test_msg(String str,EthernetClient *client){
 void check_button(int inPin){
 	unsigned char  val = digitalRead(inPin);  // read input value
 	if (val == HIGH) {         // check if the input is HIGH (button released)
-		while(val == HIGH){
-			val = digitalRead(inPin);
-			DEBUGLN(("boucle bouton"));
+		delay(20);
+		val = digitalRead(inPin); 
+		if (val == HIGH) {        // check false positive
+			while(val == HIGH){
+				val = digitalRead(inPin);
+				DEBUGLN(("boucle bouton"));
 
-			delay(100);
-		}
-		DEBUG(("Bouton pin "));
-		DEBUG((inPin));
-		DEBUGLN((" appuyer"));
-		wol_send_packet(NULL);  // Allume le PC
-		DEBUGLN(("fin check bouton"));
-		last_debug_msg = "Bouton appuyé : ";
-		last_debug_msg += inPin ;
+				delay(100);
+			}
+			DEBUG(("Bouton pin "));
+			DEBUG((inPin));
+			DEBUGLN((" appuyer"));
+			wol_send_packet(NULL);  // Allume le PC
+			DEBUGLN(("fin check bouton"));
+			last_debug_msg = "Bouton appuyé : ";
+			last_debug_msg += inPin ;
 
-	} 
+		} 
+	}
 }
 
 
