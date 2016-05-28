@@ -1,15 +1,15 @@
 
 /**
- * \file main.ino
- * \brief serveur WOL + MAJ DNS auto.
+ * \file arduino_WOL_dyndns.ino
+ * \brief serveur WOL.
  * \author benoit2600
- * \version 0.1
- * \date 1 fevrier 2014
+ * \version 2
+ * \date 28 mai 20016
  *
- * Serveur Arduino gérant les appel Wake-On-Lan, 
- * la maj auto de DNS (via Dyndns), et l'allumage d'un PC via appel distant 
- * ou via l'appui d'un bouton. Il gère aussi une télécommande 
- * (via simulation d'appui sur les boutons grace a des moteurs.
+ * Serveur Arduino gérant les appel Wake-On-Lan
+ * et l'allumage d'un PC via appel distant
+ * ou via l'appui d'un bouton. Il gère aussi une télécommande
+ * (via signal radio 433mHz.
  *
  */
 #include <SPI.h>
@@ -21,8 +21,8 @@
 /* Paramètre utilisateur : */
 
 /* - Paramètre généraux :  */
-#define ADDRESSE_MAC_ARDUINO 	0x00,0xAA,0xBB,0xCC,0xDE,0x03 	// Adresse mac de la arduino 
-#define IP_LOCAL_ARDUINO		192,168,0,180					// IP de la arduino sur le réseaux local
+#define ADDRESSE_MAC_ARDUINO 	0x00,0xAA,0xBB,0xCC,0xDE,0x03 	// Adresse mac de la arduino
+#define IP_LOCAL_ARDUINO		192,168,0,7			// IP de la arduino sur le réseaux local
 #define IP_BROADCAST_ARDUINO	192,168,0,255					// IP de broadcast pour le WOL
 #define MAGIC_PACKET_SIZE 		108								// Taille d'un paquet magique
 #define WOL_PORT				9								// Port de transmission (local) du paquet magique
@@ -51,11 +51,11 @@
 /*variable global*/
 EthernetUDP udp; 											// Création d'Un objet de classe EthernetUDP
 EthernetServer tcpServer(PORT_EXTINCTION_SERVER);
-String last_debug_msg; 
+String last_debug_msg;
 
 void setup() {
 	byte arduinoMAC[] = {ADDRESSE_MAC_ARDUINO}; 				// Adresse MAC de la Arduino
-    IPAddress ipLocal(IP_LOCAL_ARDUINO);							// Adresse IP de la Arduino 
+    IPAddress ipLocal(IP_LOCAL_ARDUINO);							// Adresse IP de la Arduino
 	pinMode(PINBUTTON1, INPUT);
 	pinMode(PINBUTTON2, INPUT);
 	//delay(1000);
@@ -74,7 +74,7 @@ void setup() {
 void loop() {
     static unsigned int timer =0;
 
-	if(timer % 50 == 0){			// On s'occupe du wol reseaux  toutes les 1 secondes
+	if(timer % 50 == 0){			// On s'occupe du wol reseaux  toutes les 0.5 secondes
 		check_wol_magic_packet();
 		timer = 0;
 	}
@@ -100,7 +100,7 @@ void check_ethernet_msg(void){
        			c = client.read();
           		stringstr += c;
 				DEBUGLN((stringstr));
-        	} 
+        	}
 		}
 		stringstr.trim();
 		DEBUG(("msg recu :_"));
@@ -122,7 +122,6 @@ void test_msg(String str,EthernetClient *client){
 		client->write("ok pour l'extinction\n");
 		delay(5000); //on attend pour verifier la bonne extinction de windows
 		Remote_OFF();
-		Remote_OFF();
 		last_debug_msg = "Extinction ecran";
 
 	}
@@ -130,13 +129,13 @@ void test_msg(String str,EthernetClient *client){
 		last_debug_msg+="\nuptime :";
 		last_debug_msg+=time;
 
-		last_debug_msg.toCharArray(otherString, last_debug_msg.length() + 1); 
+		last_debug_msg.toCharArray(otherString, last_debug_msg.length() + 1);
 		client->write(otherString);
 
 		DEBUGLN(("msg de debug sans RaL "));
 		DEBUGLN((otherString));
 		last_debug_msg=""; 	// fix overflow
-	}	
+	}
 }
 /**
  * \brief Si un bouton est appuyé, on envoie un paquet magique.
@@ -146,7 +145,7 @@ void check_button(int inPin){
 	unsigned char  val = digitalRead(inPin);  // read input value
 	if (val == HIGH) {         // check if the input is HIGH (button released)
 		delay(20);
-		val = digitalRead(inPin); 
+		val = digitalRead(inPin);
 		if (val == HIGH) {        // check false positive
 			while(val == HIGH){
 				val = digitalRead(inPin);
@@ -162,7 +161,7 @@ void check_button(int inPin){
 			last_debug_msg = "Bouton appuyé : ";
 			last_debug_msg += inPin ;
 
-		} 
+		}
 	}
 }
 
@@ -199,7 +198,6 @@ void wol_send_packet(byte * packetBuffer){
 	}
 	DEBUGLN(("Allumage ecrans."));
 	Remote_ON();	//On allume les ecrans
-	Remote_ON();	//On relance au cas ou
 
 }
 /**
@@ -240,15 +238,13 @@ void check_wol_magic_packet(void){
 void Remote_OFF(void){
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
-	
-	mySwitch.switchOff(2, 1);	// On essaie d'éteindre directement toutes les prises.
-	delay(1000);
+
 	mySwitch.switchOff(2, 3);
-	delay(1000);
+	delay(1500);
 	mySwitch.switchOff(2, 2);
-	delay(1000);
+	delay(1500);
 	mySwitch.switchOff(2, 1);
-	delay(1000);
+	delay(1500);
   	mySwitch.disableTransmit();
 }
 
@@ -258,11 +254,10 @@ void Remote_ON(void){
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
 
   	mySwitch.switchOn(2, 1);
-  	delay(750);
+  	delay(1000);
   	mySwitch.switchOn(2, 2);
-  	delay(750);  
+    delay(1000);
   	mySwitch.switchOn(2, 3);
-  	delay(750);  
+    delay(1000);
   	mySwitch.disableTransmit();
 }
-
