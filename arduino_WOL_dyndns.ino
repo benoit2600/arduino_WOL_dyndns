@@ -27,9 +27,6 @@
 #define MAGIC_PACKET_SIZE 		108								// Taille d'un paquet magique
 #define WOL_PORT				9								// Port de transmission (local) du paquet magique
 
-/*	- Paramètre Dyndns*/
-#define DNS_IP 					208,67,222,222  			// ici, OpenDNS (ex DNS google : 8,8,8,8)
-
 /*	-Parametre bouton*/
 #define PINBUTTON1 6
 #define PINBUTTON2 7
@@ -38,7 +35,7 @@
 #define PORT_EXTINCTION_SERVER 4243							// Port du serveur d'extinction du PC
 #define PIN_TRANSMITTER	9 									// Pin du transmetteur 433Mhz
 /*	- Paramètre de débugage*/
-//#define DEBUG 1
+#define DEBUG 1
 
 #ifdef DEBUG
   #define DEBUGLN(x) Serial.println x
@@ -110,7 +107,7 @@ void check_ethernet_msg(void){
 	}
 }
 
-void test_msg(String str,EthernetClient *client){
+void test_msg(String str, EthernetClient *client){
 	char otherString[50];
 	unsigned long time;
 	time = millis();
@@ -123,7 +120,6 @@ void test_msg(String str,EthernetClient *client){
 		delay(5000); //on attend pour verifier la bonne extinction de windows
 		Remote_OFF();
 		last_debug_msg = "Extinction ecran";
-
 	}
 	if( str == "debug" || str == "debug\n"){
 		last_debug_msg+="\nuptime :";
@@ -136,6 +132,20 @@ void test_msg(String str,EthernetClient *client){
 		DEBUGLN((otherString));
 		last_debug_msg=""; 	// fix overflow
 	}
+  if(str.substring(0,9) == "ecran_OFF"){
+    int screen = str.substring(10).toInt();
+    DEBUG(("extinction ecran numero : "));
+
+    DEBUGLN((str.substring(10)));
+    switch_OFF(screen);
+  }
+  if(str.substring(0,8) == "ecran_ON"){
+    int screen = str.substring(9).toInt();
+    DEBUG(("extinction ecran numero : "));
+
+    DEBUGLN((str.substring(9)));
+    switch_ON(screen);
+  }
 }
 /**
  * \brief Si un bouton est appuyé, on envoie un paquet magique.
@@ -234,7 +244,7 @@ void check_wol_magic_packet(void){
 	}
 }
 
-/* Séquence perso d'ectinction des écrans + enceinte*/
+/* Séquence perso d'extinction des écrans + enceinte*/
 void Remote_OFF(void){
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
@@ -248,6 +258,16 @@ void Remote_OFF(void){
   	mySwitch.disableTransmit();
 }
 
+/* Extinction d'un interrupteur*/
+void switch_OFF(int num){
+	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
+	mySwitch.enableTransmit(PIN_TRANSMITTER);
+
+	mySwitch.switchOff(2, num);
+	delay(1500);
+	mySwitch.disableTransmit();
+}
+
 /*Séquence perso d'allumage des écrans + enceinte*/
 void Remote_ON(void){
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
@@ -259,5 +279,15 @@ void Remote_ON(void){
     delay(1000);
   	mySwitch.switchOn(2, 3);
     delay(1000);
+  	mySwitch.disableTransmit();
+}
+
+/*allumage d'un interrupteur*/
+void switch_ON(int num){
+	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
+	mySwitch.enableTransmit(PIN_TRANSMITTER);
+
+  	mySwitch.switchOn(2, num);
+  	delay(1000);
   	mySwitch.disableTransmit();
 }
