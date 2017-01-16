@@ -69,7 +69,7 @@ void setup() {
 }
 
 void loop() {
-    static unsigned int timer =0;
+    static unsigned char timer =0;
 
 	if(timer % 50 == 0){			// On s'occupe du wol reseaux  toutes les 0.5 secondes
 		check_wol_magic_packet();
@@ -133,14 +133,14 @@ void test_msg(String str, EthernetClient *client){
 		last_debug_msg=""; 	// fix overflow
 	}
   if(str.substring(0,9) == "ecran_OFF"){
-    int screen = str.substring(10).toInt();
+    unsigned char screen = str.substring(10).toInt();
     DEBUG(("extinction ecran numero : "));
 
     DEBUGLN((str.substring(10)));
     switch_OFF(screen);
   }
   if(str.substring(0,8) == "ecran_ON"){
-    int screen = str.substring(9).toInt();
+    unsigned char screen = str.substring(9).toInt();
     DEBUG(("extinction ecran numero : "));
 
     DEBUGLN((str.substring(9)));
@@ -154,7 +154,7 @@ void test_msg(String str, EthernetClient *client){
 void check_button(int inPin){
 	unsigned char  val = digitalRead(inPin);  // read input value
 	if (val == HIGH) {         // check if the input is HIGH (button released)
-		delay(20);
+		delay(100);
 		val = digitalRead(inPin);
 		if (val == HIGH) {        // check false positive
 			while(val == HIGH){
@@ -189,9 +189,10 @@ void wol_send_packet(byte * packetBuffer){
 	if(packetBuffer == NULL){
  		byte adresseMacWOL[] = {ADRESSE_WOL};
  		byte packetBufferDefaut[MAGIC_PACKET_SIZE];
- 		for( int i = 0; i < 6; i++ )
+ 		for( char i = 0; i < 6; i++ )
 			packetBufferDefaut[i] = 0xFF;
-		for(int i = 6; i < MAGIC_PACKET_SIZE; i++){
+
+		for(char i = 6; i < MAGIC_PACKET_SIZE; i++){
 			packetBufferDefaut[i] = adresseMacWOL[i%6];
 		}
 		DEBUGLN(("envoi du paquet magique par defaut."));
@@ -218,12 +219,12 @@ void check_wol_magic_packet(void){
 	byte packetBuffer[MAGIC_PACKET_SIZE];
 	boolean passCheck= true;
 	// si on a des données à lire, on va le traiter
-	int packetSize = udp.parsePacket();
+	unsigned char packetSize = udp.parsePacket();
 	if(packetSize)
 	{
 		// lecture des données et stockage dans packetBufffer
 		udp.read(packetBuffer, MAGIC_PACKET_SIZE +6);
-		for( int i = 102; i < 108; i++ ){
+		for( unsigned char i = 102; i < 108; i++ ){
 			if(packetBuffer[i] != password[i-102]){
 				passCheck = false;
 				break;
@@ -259,7 +260,7 @@ void Remote_OFF(void){
 }
 
 /* Extinction d'un interrupteur*/
-void switch_OFF(int num){
+void switch_OFF(char num){
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
 
@@ -283,7 +284,7 @@ void Remote_ON(void){
 }
 
 /*allumage d'un interrupteur*/
-void switch_ON(int num){
+void switch_ON(char num){
 	RCSwitch mySwitch = RCSwitch();								// controle l'emetteur 433Mhz
 	mySwitch.enableTransmit(PIN_TRANSMITTER);
 
